@@ -34,9 +34,9 @@ RUN set -ex; \
       update-alternatives --install /usr/bin/arm-linux-gnueabi-gcc arm-linux-gnueabi-gcc /usr/bin/arm-linux-gnueabi-gcc-${GCC_VERSION} 100; \
       update-alternatives --install /usr/bin/arm-linux-gnueabi-g++ arm-linux-gnueabi-g++ /usr/bin/arm-linux-gnueabi-g++-${GCC_VERSION} 100; \
       update-alternatives --install /usr/bin/powerpc-linux-gnu-gcc powerpc-linux-gnu-gcc /usr/bin/powerpc-linux-gnu-gcc-${GCC_VERSION} 100; \
-      update-alternatives --install /usr/bin/powerpc64le-linux-gnu-gcc powerpc-linux64le-gnu-gcc /usr/bin/powerpc64le-linux-gnu-gcc-${GCC_VERSION} 100; \
+      update-alternatives --install /usr/bin/powerpc64le-linux-gnu-gcc powerpc64le-linux-gnu-gcc /usr/bin/powerpc64le-linux-gnu-gcc-${GCC_VERSION} 100; \
       if [ "$GCC_VERSION" != "4.9" ]; then \
-        update-alternatives --install /usr/bin/powerpc64-linux-gnu-gcc powerpc-linux64-gnu-gcc /usr/bin/powerpc64-linux-gnu-gcc-${GCC_VERSION} 100; \
+        update-alternatives --install /usr/bin/powerpc64-linux-gnu-gcc powerpc64-linux-gnu-gcc /usr/bin/powerpc64-linux-gnu-gcc-${GCC_VERSION} 100; \
       fi; \
       if [ "$GCC_VERSION" != "4.9" ] && [ "$GCC_VERSION" != "5" ] && [ "$GCC_VERSION" != "6" ]; then \
         update-alternatives --install /usr/bin/riscv64-linux-gnu-gcc riscv64-linux-gnu-gcc /usr/bin/riscv64-linux-gnu-gcc-${GCC_VERSION} 100; \
