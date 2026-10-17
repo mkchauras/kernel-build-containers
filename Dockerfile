@@ -1,22 +1,42 @@
 ARG UBUNTU_VERSION=default
 FROM ubuntu:${UBUNTU_VERSION} AS base
+ARG UBUNTU_VERSION
 
-RUN apt-get \
-    -o Acquire::https::Verify-Peer=false \
-    -o Acquire::https::Verify-Host=false \
-    update ;\
+# Rewrite apt sources to HTTPS before the first apt-get update so that
+# subsequent package operations work on hosts where port 80 is blocked.
+#
+# Ubuntu 24.04+ uses DEB822 format (.sources) with 'URIs: http://' lines.
+# Older releases use sources.list with 'deb http://' lines.
+#
+# Bootstrap sequence:
+#   1. Rewrite sources HTTP -> HTTPS (no network needed, just sed)
+#   2. apt-get update with SSL verification disabled (no ca-certs yet)
+#   3. Install ca-certificates
+#   4. update-ca-certificates so all subsequent apt calls verify properly
+RUN find /etc/apt/sources.list.d/ -name '*.sources' \
+        -exec sed -i 's|URIs: http://|URIs: https://|g' {} + && \
+    find /etc/apt/ -maxdepth 1 -name 'sources.list' \
+        -exec sed -i 's|deb http://|deb https://|g' {} + && \
     apt-get \
-    -o Acquire::https::Verify-Peer=false \
-    -o Acquire::https::Verify-Host=false \
-    install -y --no-install-recommends ca-certificates;\
-    update-ca-certificates ;\
+        -o Acquire::https::Verify-Peer=false \
+        -o Acquire::https::Verify-Host=false \
+        update && \
+    apt-get \
+        -o Acquire::https::Verify-Peer=false \
+        -o Acquire::https::Verify-Host=false \
+        install -y --no-install-recommends ca-certificates && \
+    update-ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
 RUN set -ex; \
     echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections; \
     apt-get update; \
-    apt-get install -y -q apt-utils dialog; \
-    apt-get install -y -q sudo aptitude flex bison cpio libncurses5-dev make git exuberant-ctags sparse bc libssl-dev libelf-dev bsdmainutils dwarves xz-utils zstd gawk rsync; \
+    if [ "${UBUNTU_VERSION%%.*}" -lt 26 ]; then \
+      apt-get install -y -q apt-utils dialog exuberant-ctags; \
+    else \
+      apt-get install -y -q universal-ctags; \
+    fi; \
+    apt-get install -y -q sudo aptitude flex bison cpio libncurses5-dev make git sparse bc libssl-dev libelf-dev bsdmainutils dwarves xz-utils zstd gawk rsync u-boot-tools; \
     apt-get install -y -q python3 python3-venv; \
     apt-get install -y -q python-is-python3 || apt-get install -y -q python
 
@@ -63,8 +83,10 @@ RUN set -ex; \
       fi; \
       update-alternatives --install /usr/bin/arm-linux-gnueabi-gcc arm-linux-gnueabi-gcc /usr/bin/arm-linux-gnueabi-gcc-${GCC_VERSION} 100; \
       update-alternatives --install /usr/bin/arm-linux-gnueabi-g++ arm-linux-gnueabi-g++ /usr/bin/arm-linux-gnueabi-g++-${GCC_VERSION} 100; \
-      update-alternatives --install /usr/bin/powerpc64le-linux-gnu-gcc powerpc64le-linux-gnu-gcc /usr/bin/powerpc64le-linux-gnu-gcc-${GCC_VERSION} 100; \
-      update-alternatives --install /usr/bin/powerpc64le-linux-gnu-g++ powerpc64le-linux-gnu-g++ /usr/bin/powerpc64le-linux-gnu-g++-${GCC_VERSION} 100; \
+      if [ "$ARCH" != "ppc64el" ]; then \
+        update-alternatives --install /usr/bin/powerpc64le-linux-gnu-gcc powerpc64le-linux-gnu-gcc /usr/bin/powerpc64le-linux-gnu-gcc-${GCC_VERSION} 100; \
+        update-alternatives --install /usr/bin/powerpc64le-linux-gnu-g++ powerpc64le-linux-gnu-g++ /usr/bin/powerpc64le-linux-gnu-g++-${GCC_VERSION} 100; \
+      fi; \
       if [ "$GCC_VERSION" != "4.9" ] && [ "$GCC_VERSION" != "5" ] && [ "$GCC_VERSION" != "6" ]; then \
         update-alternatives --install /usr/bin/riscv64-linux-gnu-gcc riscv64-linux-gnu-gcc /usr/bin/riscv64-linux-gnu-gcc-${GCC_VERSION} 100; \
         update-alternatives --install /usr/bin/riscv64-linux-gnu-g++ riscv64-linux-gnu-g++ /usr/bin/riscv64-linux-gnu-g++-${GCC_VERSION} 100; \
@@ -100,8 +122,6 @@ ARG UID
 ARG GNAME
 ARG GID
 RUN set -x; \
-    # These commands are allowed to fail (it happens for root, for example).
-    # The result will be checked in the last RUN.
     userdel -r `getent passwd ${UID} | cut -d : -f 1` > /dev/null 2>&1; \
     groupdel -f `getent group ${GID} | cut -d : -f 1` > /dev/null 2>&1; \
     groupadd -g ${GID} ${GNAME}; \
