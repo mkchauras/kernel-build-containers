@@ -93,7 +93,9 @@ def get_cross_compile_args(arch):
     elif arch in {'powerpc', 'powerpc64', 'powerpc64le'}:
         # The powerpc64le toolchain builds all the powerpc variants
         args_list.append('ARCH=powerpc')
-        args_list.append('CROSS_COMPILE=powerpc64le-linux-gnu-')
+        if native_arch != 'powerpc64le':
+            # On a ppc64le host the default gcc is that toolchain, there is no cross-compiler
+            args_list.append('CROSS_COMPILE=powerpc64le-linux-gnu-')
     return args_list
 
 
