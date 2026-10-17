@@ -36,7 +36,7 @@ RUN set -ex; \
     else \
       apt-get install -y -q universal-ctags; \
     fi; \
-    apt-get install -y -q sudo aptitude flex bison cpio libncurses5-dev make git sparse bc libssl-dev libelf-dev bsdmainutils dwarves xz-utils zstd gawk rsync; \
+    apt-get install -y -q sudo aptitude flex bison cpio libncurses5-dev make git sparse bc libssl-dev libelf-dev bsdmainutils dwarves xz-utils zstd gawk rsync u-boot-tools; \
     apt-get install -y -q python3 python3-venv; \
     apt-get install -y -q python-is-python3 || apt-get install -y -q python
 
